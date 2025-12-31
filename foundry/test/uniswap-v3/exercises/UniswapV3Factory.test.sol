@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.24;
+pragma solidity ^0.8.24;
 
 import {Test, console2} from "forge-std/Test.sol";
 import {IUniswapV3Factory} from
@@ -23,6 +23,8 @@ contract UniswapV3FactoryTest is Test {
     ERC20 private tokenB;
 
     function setUp() public {
+        vm.createSelectFork("mainnet");
+
         tokenA = new ERC20("A", "A", 18);
         tokenB = new ERC20("B", "B", 18);
     }
@@ -30,14 +32,14 @@ contract UniswapV3FactoryTest is Test {
     // Exercise 1 - Get the address of DAI/USDC (0.1% fee) pool
     function test_getPool() public {
         // Write your code here
-        address pool;
+        address pool = factory.getPool(DAI, USDC, uint24(100));
         assertEq(pool, UNISWAP_V3_POOL_DAI_USDC_100);
     }
 
     // Exercise 2 - Deploy a new pool with tokenA and tokenB, 0.1% fee
     function test_createPool() public {
         // Write your code here
-        address pool;
+        address pool = factory.createPool(address(tokenA), address(tokenB), POOL_FEE);
 
         (address token0, address token1) = address(tokenA) <= address(tokenB)
             ? (address(tokenA), address(tokenB))

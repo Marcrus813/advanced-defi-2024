@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.24;
+pragma solidity ^0.8.24;
 
 import {Test, console2} from "forge-std/Test.sol";
 import {IERC20} from "../../../src/interfaces/IERC20.sol";
 import {IWETH} from "../../../src/interfaces/IWETH.sol";
-import {INonfungiblePositionManager} from
-    "../../../src/interfaces/uniswap-v3/INonfungiblePositionManager.sol";
+import {
+    INonfungiblePositionManager
+} from "../../../src/interfaces/uniswap-v3/INonfungiblePositionManager.sol";
 import {
     UNISWAP_V3_NONFUNGIBLE_POSITION_MANAGER,
     DAI,
@@ -41,6 +42,8 @@ contract UniswapV3LiquidityTest is Test {
     int24 private constant TICK_SPACING = 60;
 
     function setUp() public {
+        vm.createSelectFork("mainnet");
+
         deal(DAI, address(this), 3000 * 1e18);
         deal(WETH, address(this), 3 * 1e18);
 
@@ -49,13 +52,13 @@ contract UniswapV3LiquidityTest is Test {
     }
 
     function mint() private returns (uint256 tokenId) {
-        (tokenId,,,) = manager.mint(
+        (tokenId, , , ) = manager.mint(
             INonfungiblePositionManager.MintParams({
                 token0: DAI,
                 token1: WETH,
                 fee: POOL_FEE,
-                tickLower: MIN_TICK / TICK_SPACING * TICK_SPACING,
-                tickUpper: MAX_TICK / TICK_SPACING * TICK_SPACING,
+                tickLower: (MIN_TICK / TICK_SPACING) * TICK_SPACING,
+                tickUpper: (MAX_TICK / TICK_SPACING) * TICK_SPACING,
                 amount0Desired: 1000 * 1e18,
                 amount1Desired: 1e18,
                 amount0Min: 0,
@@ -66,11 +69,9 @@ contract UniswapV3LiquidityTest is Test {
         );
     }
 
-    function getPosition(uint256 tokenId)
-        private
-        view
-        returns (Position memory)
-    {
+    function getPosition(
+        uint256 tokenId
+    ) private view returns (Position memory) {
         (
             uint96 nonce,
             address operator,
@@ -113,8 +114,28 @@ contract UniswapV3LiquidityTest is Test {
     // - Set recipient of NFT (that represents the ownership of this position) to this contract.
     function test_mint() public {
         // Write your code here
-        (uint256 tokenId, uint128 liquidity, uint256 amount0, uint256 amount1) =
-            (0, 0, 0, 0);
+        INonfungiblePositionManager.MintParams
+            memory mintParams = INonfungiblePositionManager.MintParams({
+                token0: DAI,
+                token1: WETH,
+                fee: POOL_FEE,
+                tickLower: -79020,
+                tickUpper: -79020 + 50 * 60,
+                amount0Desired: 1000e18,
+                amount1Desired: 1e18,
+                amount0Min: 0,
+                amount1Min: 0,
+                recipient: address(this),
+                deadline: type(uint256).max
+            });
+
+
+        (
+            uint256 tokenId,
+            uint128 liquidity,
+            uint256 amount0,
+            uint256 amount1
+        ) = manager.mint(mintParams);
 
         console2.log("Amount 0 added %e", amount0);
         console2.log("Amount 1 added %e", amount1);

@@ -1,8 +1,9 @@
 pragma solidity 0.8.24;
 
 import {Test, console2} from "forge-std/Test.sol";
-import {IUniswapV3Pool} from
-    "../../../src/interfaces/uniswap-v3/IUniswapV3Pool.sol";
+import {
+    IUniswapV3Pool
+} from "../../../src/interfaces/uniswap-v3/IUniswapV3Pool.sol";
 import {UNISWAP_V3_POOL_USDC_WETH_500} from "../../../src/Constants.sol";
 import {FullMath} from "../../../src/uniswap-v3/FullMath.sol";
 
@@ -19,14 +20,29 @@ contract UniswapV3SwapTest is Test {
     // Exercise 1
     // - Get price of WETH in terms of USDC and return price with 18 decimals
     function test_spot_price_from_sqrtPriceX96() public {
+        vm.createFork("mainnet");
+
         uint256 price = 0;
         IUniswapV3Pool.Slot0 memory slot0 = pool.slot0();
 
         // Write your code here
         // Don’t change any other code
 
+        uint160 sqrtPriceX96 = slot0.sqrtPriceX96;
+        uint256 x96 = 2 ** 96;
+
+        // sqrtPriceX96 = sqrt(P) * x96
+        // price = sqrt(P) * x96 * sqrt(P) * x96 / x96 / x96
+        // price * x96 = sqrt(P) * x96 * sqrt(P) * x96 / x96 = sqrt(P) * x96 * sqrt(P)
+
+        // This is to avoid overflow and underflow
+
         // sqrtPriceX96 * sqrtPriceX96 might overflow
         // So use FullMath.mulDiv to do uint256 * uint256 / uint256 without overflow
+
+        price = FullMath.mulDiv(sqrtPriceX96, sqrtPriceX96, x96);
+
+        // price = P * x96 -> this is the price we want with some special rep
 
         assertGt(price, 0, "price = 0");
         console2.log("price %e", price);

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.24;
+pragma solidity ^0.8.24;
 
 import {Test, console2} from "forge-std/Test.sol";
 import {IERC20} from "../../../src/interfaces/IERC20.sol";
@@ -20,6 +20,7 @@ contract UniswapV3SwapTest is Test {
     uint24 private constant POOL_FEE = 3000;
 
     function setUp() public {
+        vm.createSelectFork("mainnet");
         deal(DAI, address(this), 1000 * 1e18);
         dai.approve(address(router), type(uint256).max);
     }
@@ -33,6 +34,19 @@ contract UniswapV3SwapTest is Test {
         // Write your code here
         // Call router.exactInputSingle
         uint256 amountOut = 0;
+
+        ISwapRouter.ExactInputSingleParams
+            memory exactInputSingleParams = ISwapRouter.ExactInputSingleParams({
+                tokenIn: DAI,
+                tokenOut: WETH,
+                fee: POOL_FEE,
+                recipient: address(this),
+                amountIn: 1000 * 1e18,
+                amountOutMinimum: 1,
+                sqrtPriceLimitX96: 0
+            });
+
+        amountOut = router.exactInputSingle(exactInputSingleParams);
 
         uint256 wethAfter = weth.balanceOf(address(this));
 
@@ -53,6 +67,16 @@ contract UniswapV3SwapTest is Test {
         bytes memory path;
         uint256 amountOut = 0;
 
+        path = abi.encodePacked(DAI, POOL_FEE, WETH, POOL_FEE, WBTC);
+        ISwapRouter.ExactInputParams memory exactInputParams = ISwapRouter
+            .ExactInputParams({
+                path: path,
+                recipient: address(this),
+                amountIn: 1000 * 1e18,
+                amountOutMinimum: 1
+            });
+        amountOut = router.exactInput(exactInputParams);
+
         console2.log("WBTC amount out %e", amountOut);
         assertGt(amountOut, 0);
         assertEq(wbtc.balanceOf(address(this)), amountOut);
@@ -67,6 +91,19 @@ contract UniswapV3SwapTest is Test {
         // Write your code here
         // Call router.exactOutputSingle
         uint256 amountIn = 0;
+
+        ISwapRouter.ExactOutputSingleParams
+            memory exactOutputParams = ISwapRouter.ExactOutputSingleParams({
+                tokenIn: DAI,
+                tokenOut: WETH,
+                fee: POOL_FEE,
+                recipient: address(this),
+                amountOut: 1e17,
+                amountInMaximum: 1000 * 1e18,
+                sqrtPriceLimitX96: 0
+            });
+
+        amountIn = router.exactOutputSingle(exactOutputParams);
 
         uint256 wethAfter = weth.balanceOf(address(this));
 
@@ -86,6 +123,16 @@ contract UniswapV3SwapTest is Test {
         // Call router.exactOutput
         bytes memory path;
         uint256 amountIn = 0;
+
+        path = abi.encodePacked(WBTC, POOL_FEE, WETH, POOL_FEE, DAI);
+        ISwapRouter.ExactOutputParams memory exactOutputParams = ISwapRouter.ExactOutputParams({
+            path: path,
+            recipient: address(this),
+            amountOut: 0.01 * 1e8,
+            amountInMaximum: 1000 * 1e18
+        });
+
+        amountIn = router.exactOutput(exactOutputParams);
 
         console2.log("DAI amount in %e", amountIn);
         assertLe(amountIn, 1000 * 1e18);
